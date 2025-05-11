@@ -168,80 +168,70 @@ delete from salesman
 where sid=103;
 
 -- MOVIE DATABASE
-create table salesman(sid int primary key, name varchar(10),city varchar(10),commission int);
-create table customer(cid int primary key,cname varchar(10),city varchar(10),grade int(5),sid int references sales(sid) on delete cascade);
-create table orders(ono int primary key, pamount int, odate date, cid int references customer(cid) on delete cascade, sid int references sales(sid) on delete cascade);
+create table actor(actid int primary key, aname varchar(10),gender varchar(6));
+create table director(did int primary key,dname varchar(30),phone int);
+create table movies(mid int primary key, mtitle varchar(10),myear int,mlang
+varchar(10),did int(5) references director(did) on delete cascade);
+create table movie_cast(actid int references actor(actid) on delete cascade, mid
+int references movies(mid) on delete cascade, role varchar(10));
+create table rating(mid int references movies(mid) on delete cascade, revstars
+int); 
 
--- Insertion
-insert into salesman(sid,name,city,commission)
-values
-		(101,'ravi','mangalore',10),
-        (102,'Dhruv','Ballari',20),
-        (103,'Sakshi','mysore',10);
+insert into actor(actid,aname,gender)
+values(111,'sam','male'),(112,'bob','male'),(113,'ariyana','female');
+insert into director(did,dname,phone)
+values(2111,'hitchcock',5647382),(2112,'steven',657484),(2113,'john',56767);
+insert into movies(mid,mtitle,myear,mlang,did)
+values(500,'jpark',2013,'english',2112),(501,'kushi',2000,'Telugu',2111),(502,'spiderman',2017,'english',2113);
+insert into movie_cast(actid,mid,role)
+values(111,501,'mainlead'),(112,502,'supporting'),(112,501,'negative'),(111,502,'hero');
+insert into rating(mid,revstars)
+values(500,5),(501,4),(502,3),(502,5);
 
-insert into customer(cid,cname,city,grade,sid)
-values
-		(215,'avi','Ballari',100,102),
-        (287,'nisar','Bangalore',220,102),
-        (252,'arun','Mysore',500,103);
-        
-insert into orders(ono,pamount,odate,cid,sid)
-values
-		(551,4531,'2024-12-01',287,101),
-        (552,43247,'2024-12-31',215,102),
-        (553,10245,'2025-02-08',252,101);
-        
-select * from salesman;
-select * from customer;
-select * from orders;
+select * from actor;
+select * from director;
+select * from movies;
+select * from movie_cast;
+select * from rating;
 
-desc salesman;
-desc customer;
-desc orders;
+desc actor;
+desc director;
+desc movies;
+desc movie_cast;
+desc rating;
 
-truncate orders;
+truncate movie_cast;
 
--- Query 1
-select grade,count(*) as NO_OF_CUSTOMERS
-from customer
-group by grade
-having grade>
-(
-	select avg(grade)
-	from customer
-    where city='Bangalore'
-);
+select m.mid ,m.mtitle
+from movies m,director d
+where m.did=d.did and d.dname='hitchcock'; 
 
--- Query 2
-select name,sid 
-from salesman 
-where sid in 
-(select sid 
- from orders 
- group by sid 
- having count(cid)>1);
+select m.mtitle
+from movies m, movie_cast mc
+where m.mid=mc.mid and mc.actid in
+(select actid from movie_cast
+ group by actid
+ having count(actid)>=2)
+ group by m.mtitle
+ having count(*)>=2;
+
+select a.aname,m1.mtitle,m1.myear,m2.mtitle,m2.myear
+from actor a, movies m1, movies m2, movie_cast c1, movie_cast c2
+where m1.myear < 2000 and m2.myear > 2015 and a.actid = c1.actid
+and c1.mid = m1.mid and a.actid = c2.actid and c2.mid = m2.mid;
+
+select m.mtitle,max(r.revstars)
+from rating r,movies m
+where m.mid=r.mid
+ group by m.mtitle
+ order by m.mtitle;
  
--- Query 3
-(select s.sid ,s.name,s.city,c.cid,c.city,c.cname 
- from salesman s,customer c 
- where s.sid=c.sid and c.city=s.city) 
- UNION 
- (select s.sid ,s.name,s.city,c.cid,c.city,'NO CUSTOMERS IN CITY' 
- from salesman s,customer c 
- where s.sid=c.sid and c.city!=s.city);
+update rating
+set revstars='5'
+where mid in
+ (select m.mid
+ from movies m,director d
+ where m.did=d.did and dname='steven');
  
--- Query 4
-create view HIGHEST_ORDERS 
-as select s.sid,s.name,o1.odate,o1.pamount 
-from salesman s,orders o1 
-where s.sid=o1.sid and o1.pamount= 
-(
-	select max(o2.pamount) from orders o2 
-    where o1.odate=o2.odate
-);
+select * from rating;
 
-select * from HIGHEST_ORDERS;
-
---  Query 5
-delete from salesman
-where sid=103;

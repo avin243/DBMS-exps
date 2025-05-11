@@ -1,0 +1,247 @@
+-- LIBRARY DATABASE
+create table publisher(name varchar(18) primary key, address varchar(10),
+phone varchar(10));
+create table book(bkid varchar(30) primary key, title varchar(20), name
+varchar(20) references publisher(name) on delete cascade,pyear int);
+create table book_authors(bkid varchar(30) references book(bkid) on delete
+cascade, aname varchar(20),primary key(bkid));
+create table library_branch(branch_id varchar(30) primary key, branch_name
+varchar(30), address varchar(30));
+create table book_copies(bkid varchar(30)references book1(bkid) on delete
+cascade, branch_id varchar(30) references library_branch1(branch_id) on
+delete cascade, numcopies int);
+create table book_lending(bkid varchar(30) references book1(bkid) on delete
+cascade,branch_id varchar(30) references library_branch(branch_id) on
+delete cascade,cardno int,date_out date,due_date date); 
+
+
+desc publisher;
+desc book;
+desc book_authors;
+desc library_branch;
+desc book_copies;
+desc book_lending;
+
+insert into publisher(name,address,phone) 
+values ('PHI','delhi','9877777777'),
+		('pearson','delhi','9812345678');	
+insert into book (bkid,title,name,pyear)
+values	(111,'c','pearson',2010),
+		(112,'c++','pearson',2012),
+		(113,'DBMS','PHI',2012);
+insert into book_authors (bkid,aname)
+values	(111,'scott'),
+		(112,'subhash'),
+		(113,'Harry');
+insert into library_branch (branch_id,branch_name,address)
+values (1,'ISE','ise dept'),
+		(2,'CSE','cse dept'),
+		(3,'EEE','eee dept');
+insert into book_copies (bkid,branch_id,numcopies)
+values (111,1,5),
+		(112,1,4),
+		(113,2,8);
+insert into book_lending(bkid,branch_id,cardno,date_out,due_date)
+values (111,1,2222,'2016-8-17','2016-9-20'),
+		(112,2,2223,'2016-7-3','2017-4-11'),
+		(113,1,2223,'2017-3-17','2017-4-12');
+        
+select * from book;
+select * from publisher;
+select * from book_copies;
+select * from book_lending;
+select * from library_branch;
+select * from book_authors;
+
+-- Query 1
+select b.bkid,b.title,b.name,ba.aname,bc.branch_id,bc.numcopies
+from book b,book_authors ba,book_copies bc
+where b.bkid=ba.bkid and b.bkid=bc.bkid;
+
+-- query 2
+select b.bkid,bl.branch_id,bl.cardno
+ from book b,book_lending bl
+ where b.bkid=bl.bkid and bl.cardno
+ in
+ (select cardno
+ from book_lending bl
+ where due_date between '2017-1-1' and '2017-6-30' and
+ date_out between '2017-1-1' and '2017-6-30'
+ group by cardno having count(cardno)>=1);
+ 
+-- query 3
+delete from book
+where bkid=113;
+
+-- query 4
+select bkid,title,name,pyear
+ from book
+ group by pyear,bkid,title,name;
+ 
+-- query 5
+create view LIBRARY_BOOKS_DB
+ as
+ select b.bkid,b.title,bc.numcopies
+ from book b,book_copies bc
+ where b.bkid=bc.bkid;
+ 
+ select * from LIBRARY_BOOKS_DB; 
+
+
+-- ORDER DATABASE
+create table salesman(sid int primary key, name varchar(10),city varchar(10),commission int);
+create table customer(cid int primary key,cname varchar(10),city varchar(10),grade int(5),sid int references sales(sid) on delete cascade);
+create table orders(ono int primary key, pamount int, odate date, cid int references customer(cid) on delete cascade, sid int references sales(sid) on delete cascade);
+
+-- Insertion
+insert into salesman(sid,name,city,commission)
+values
+		(101,'ravi','mangalore',10),
+        (102,'Dhruv','Ballari',20),
+        (103,'Sakshi','mysore',10);
+
+insert into customer(cid,cname,city,grade,sid)
+values
+		(215,'avi','Ballari',100,102),
+        (287,'nisar','Bangalore',220,102),
+        (252,'arun','Mysore',500,103);
+        
+insert into orders(ono,pamount,odate,cid,sid)
+values
+		(551,4531,'2024-12-01',287,101),
+        (552,43247,'2024-12-31',215,102),
+        (553,10245,'2025-02-08',252,101);
+        
+select * from salesman;
+select * from customer;
+select * from orders;
+
+desc salesman;
+desc customer;
+desc orders;
+
+truncate orders;
+
+-- Query 1
+select grade,count(*) as NO_OF_CUSTOMERS
+from customer
+group by grade
+having grade>
+(
+	select avg(grade)
+	from customer
+    where city='Bangalore'
+);
+
+-- Query 2
+select name,sid 
+from salesman 
+where sid in 
+(select sid 
+ from orders 
+ group by sid 
+ having count(cid)>1);
+ 
+-- Query 3
+(select s.sid ,s.name,s.city,c.cid,c.city,c.cname 
+ from salesman s,customer c 
+ where s.sid=c.sid and c.city=s.city) 
+ UNION 
+ (select s.sid ,s.name,s.city,c.cid,c.city,'NO CUSTOMERS IN CITY' 
+ from salesman s,customer c 
+ where s.sid=c.sid and c.city!=s.city);
+ 
+-- Query 4
+create view HIGHEST_ORDERS 
+as select s.sid,s.name,o1.odate,o1.pamount 
+from salesman s,orders o1 
+where s.sid=o1.sid and o1.pamount= 
+(
+	select max(o2.pamount) from orders o2 
+    where o1.odate=o2.odate
+);
+
+select * from HIGHEST_ORDERS;
+
+--  Query 5
+delete from salesman
+where sid=103;
+
+-- MOVIE DATABASE
+create table salesman(sid int primary key, name varchar(10),city varchar(10),commission int);
+create table customer(cid int primary key,cname varchar(10),city varchar(10),grade int(5),sid int references sales(sid) on delete cascade);
+create table orders(ono int primary key, pamount int, odate date, cid int references customer(cid) on delete cascade, sid int references sales(sid) on delete cascade);
+
+-- Insertion
+insert into salesman(sid,name,city,commission)
+values
+		(101,'ravi','mangalore',10),
+        (102,'Dhruv','Ballari',20),
+        (103,'Sakshi','mysore',10);
+
+insert into customer(cid,cname,city,grade,sid)
+values
+		(215,'avi','Ballari',100,102),
+        (287,'nisar','Bangalore',220,102),
+        (252,'arun','Mysore',500,103);
+        
+insert into orders(ono,pamount,odate,cid,sid)
+values
+		(551,4531,'2024-12-01',287,101),
+        (552,43247,'2024-12-31',215,102),
+        (553,10245,'2025-02-08',252,101);
+        
+select * from salesman;
+select * from customer;
+select * from orders;
+
+desc salesman;
+desc customer;
+desc orders;
+
+truncate orders;
+
+-- Query 1
+select grade,count(*) as NO_OF_CUSTOMERS
+from customer
+group by grade
+having grade>
+(
+	select avg(grade)
+	from customer
+    where city='Bangalore'
+);
+
+-- Query 2
+select name,sid 
+from salesman 
+where sid in 
+(select sid 
+ from orders 
+ group by sid 
+ having count(cid)>1);
+ 
+-- Query 3
+(select s.sid ,s.name,s.city,c.cid,c.city,c.cname 
+ from salesman s,customer c 
+ where s.sid=c.sid and c.city=s.city) 
+ UNION 
+ (select s.sid ,s.name,s.city,c.cid,c.city,'NO CUSTOMERS IN CITY' 
+ from salesman s,customer c 
+ where s.sid=c.sid and c.city!=s.city);
+ 
+-- Query 4
+create view HIGHEST_ORDERS 
+as select s.sid,s.name,o1.odate,o1.pamount 
+from salesman s,orders o1 
+where s.sid=o1.sid and o1.pamount= 
+(
+	select max(o2.pamount) from orders o2 
+    where o1.odate=o2.odate
+);
+
+select * from HIGHEST_ORDERS;
+
+--  Query 5
+delete from salesman
+where sid=103;
